@@ -1,0 +1,74 @@
+.title Universal Motor Performance Curves
+
+* ------------------------------------------------------------
+* Assumed motor data for 230 V, 1 HP, 4 A, 2500 rpm
+* Series-wound universal motor, 50 Hz AC and pure DC
+* ------------------------------------------------------------
+
+.param Vnom=230
+.param Rser=5.0
+.param Lser=0.1
+.param Xl=31.416
+.param Km=0.1986
+.param Bfr=1.25e-3
+.param Vbrush=2.0
+
+* ------------------------------------------------------------
+* Current sweep source
+* This current represents the motor line current.
+* ------------------------------------------------------------
+
+Isweep sweep 0 DC 2
+Rdummy sweep 0 1
+
+* Current magnitude variable
+Biout iout 0 V = sqrt(I(Isweep)*I(Isweep))
+
+* ------------------------------------------------------------
+* DC steady-state model
+* ------------------------------------------------------------
+
+Bspd_dc spd_dc 0 V = max((Vnom - Vbrush - V(iout)*Rser)/(Km*V(iout)), 0)
+Brpm_dc rpm_dc 0 V = V(spd_dc)*60/(2*3.1415926535)
+
+Bt_dc t_dc 0 V = max(Km*V(iout)*V(iout) - Bfr*V(spd_dc), 0)
+Bp_dc p_dc 0 V = V(t_dc)*V(spd_dc)
+
+Bpin_dc pin_dc 0 V = Vnom*V(iout)
+Beff_dc eff_dc 0 V = 100*V(p_dc)/V(pin_dc)
+
+* ------------------------------------------------------------
+* AC 50 Hz quasi-static model
+* ------------------------------------------------------------
+
+Bspd_ac spd_ac 0 V = max((sqrt(max((Vnom/V(iout))*(Vnom/V(iout)) - Xl*Xl, 0)) - Rser)/Km, 0)
+Brpm_ac rpm_ac 0 V = V(spd_ac)*60/(2*3.1415926535)
+
+Bt_ac t_ac 0 V = max(Km*V(iout)*V(iout) - Bfr*V(spd_ac), 0)
+Bp_ac p_ac 0 V = V(t_ac)*V(spd_ac)
+
+Bpf_ac pf_ac 0 V = V(iout)*(Rser + Km*V(spd_ac))/Vnom
+Bpin_ac pin_ac 0 V = Vnom*V(iout)*V(pf_ac)
+Beff_ac eff_ac 0 V = 100*V(p_ac)/V(pin_ac)
+
+* ------------------------------------------------------------
+* Sweep line current from near no-load to overload
+* ------------------------------------------------------------
+
+.dc Isweep 1.95 5.2 0.02
+
+.control
+
+run
+
+------------------------------------------------------------
+plot v(rpm_dc) vs v(t_dc)
+plot v(rpm_ac) vs v(t_ac)
+plot v(eff_dc) vs v(p_dc)
+plot v(eff_ac) vs v(p_ac)
+plot v(pf_ac) vs v(p_ac)
+------------------------------------------------------------
+
+.endc
+
+.end
